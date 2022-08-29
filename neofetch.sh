@@ -32,13 +32,15 @@ echo "-> Memory: ${cur_ram}/${max_ram}M (${percent}%)"
 while read line ; do
   read line disk use a b c
   case $line in 
-    /dev/ )line=${line#* } && break ;;
+    total )line=${line#* } && break ;;
   esac
-done < <(df -h /)
+done < <(df -h --total)
 echo "-> Disk usage: ${use}/${disk} (${b}) "
 
 # CPU usage
 #TODO: I need remove this because this is horrible way to do 
-awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} 
-      else print ($2+$4-u1) * 100 / (t-t1) "%"; }' \
-<(grep 'cpu ' /proc/stat) <(sleep 1;grep 'cpu ' /proc/stat)
+while read line ; do
+  case $line in 
+    cpu ) u=`awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} else print ($2+$4-u1) * 100 / (t-t1) "%"; }'` && break ;;
+  esac
+done < <(/proc/stat)
