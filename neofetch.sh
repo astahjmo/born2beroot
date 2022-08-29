@@ -28,19 +28,20 @@ while read line ; do
 done < "$memory"
 percent=$(echo $(bc -l <<< "scale=2; $cur_ram / $max_ram * 100"))
 echo "-> Memory: ${cur_ram}/${max_ram}M (${percent}%)"
-# Disk
-while read line ; do
-  read line disk use a b c
-  case $line in 
-    total )line=${line#* } && break ;;
-  esac
-done < <(df -h --total)
-echo "-> Disk usage: ${use}/${disk} (${b}) "
-
+# Disk"
+echo "-> Disk usage: $(df -h --total | grep "total" | awk '{print $3 "/" $2, "("$5")"}')"
 # CPU usage
-#TODO: I need remove this because this is horrible way to do 
-while read line ; do
-  case $line in 
-    cpu ) u=`awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} else print ($2+$4-u1) * 100 / (t-t1) "%"; }'` && break ;;
-  esac
-done < <(/proc/stat)
+cpu_idle=`top -b -n 1 | grep Cpu | awk '{print $8}'|cut -f 1 -d "."`
+echo "-> Cpu usage: $(bc -l <<< "100 - $cpu_idle")%"
+# last boot
+echo "-> Last boot: $(who -b | awk '{printf $3" "$4}')"
+# LVM
+echo "-> LVM:" $(cat /etc/fstab | grep '/dev/(mapper/|disk/by-id/dm)' && echo 'Yes' || echo 'No')
+# TCP connection
+echo "-> Connections TCP: $(netstat -natu | grep 'ESTABLISHED' | wc -l) ESTABLISHED"
+# Users Logged
+echo "-> Users logged: $(who | wc -l )"
+# MAC-ADDRESS
+echo "-> Network: $(ifconfig | grep "inet"| awk 'NR==1{print $2}') $(cat /sys/class/net/*/address | awk 'NR==1{print "("$1")"}')"
+# SUDO
+echo "-> Sudo: $(cat /var/log/sudo | wc -l) commands"
